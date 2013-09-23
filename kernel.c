@@ -266,6 +266,30 @@ void echo()
 	}
 }
 
+char echo_cmd_version()
+{
+	int fdout, fdin;
+	char c;//[100] = {'\0'};
+	int c_count = 0;
+	fdout = open("/dev/tty0/out",0);
+	fdin = open("/dev/tty0/in", 0);
+	
+	while (1){
+		read(fdin, &c, 1);
+		write(fdout, &c, 1);
+		break;
+		//c_count++;
+	}
+	
+	return c;
+}
+
+void write_cmd_prefix(){
+
+	
+
+}
+
 void rs232_xmit_msg_task()
 {
 	int fdout, fdin;
@@ -288,6 +312,14 @@ void rs232_xmit_msg_task()
 			curr_char++;
 		}
 	}
+}
+
+void queue_str_task_once(const char *str)
+{
+	int fdout = mq_open("/tmp/mqueue/out", 0);
+	int msg_len = strlen(str) + 1;
+
+	write(fdout, str ,msg_len);
 }
 
 void queue_str_task(const char *str, int delay)
@@ -313,6 +345,10 @@ void queue_str_task2()
 {
 	queue_str_task("Hello 2\n", 50);
 }
+void queue_str_prefix()
+{
+	queue_str_task_once("fwh@STM32:");
+}
 
 void serial_readwrite_task()
 {
@@ -326,16 +362,22 @@ void serial_readwrite_task()
 	fdin = open("/dev/tty0/in", 0);
 
 	/* Prepare the response message to be queued. */
-	memcpy(str, "Got:", 4);
+	memcpy(str, "fwh@STM32:", 10);
+	//char shell_header[10]= "fwh@STM32:";
+	
+
+
+	//write(fdout,shell_header,10);
 
 	while (1) {
-		curr_char = 4;
+		curr_char = 10;
 		done = 0;
 		do {
 			/* Receive a byte from the RS232 port (this call will
 			 * block). */
-			read(fdin, &ch, 1);
-
+			ch = echo_cmd_version();
+			//read(fdin, &ch, 1);
+			//write(fdout,&ch,1);
 			/* If the byte is an end-of-line type character, then
 			 * finish the string and inidcate we are done.
 			 */
@@ -366,8 +408,8 @@ void first()
 	if (!fork()) setpriority(0, 0), serialout(USART2, USART2_IRQn);
 	if (!fork()) setpriority(0, 0), serialin(USART2, USART2_IRQn);
 	if (!fork()) rs232_xmit_msg_task();
-	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), queue_str_task1();
-	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), queue_str_task2();
+//	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), queue_str_task1();
+	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), queue_str_prefix();
 	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), serial_readwrite_task();
 
 	setpriority(0, PRIORITY_LIMIT);
