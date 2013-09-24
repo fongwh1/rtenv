@@ -266,7 +266,7 @@ void echo()
 	}
 }
 
-char echo_cmd_version()
+char echo_cmd()
 {
 	int fdout, fdin;
 	char c;//[100] = {'\0'};
@@ -282,12 +282,6 @@ char echo_cmd_version()
 	}
 	
 	return c;
-}
-
-void write_cmd_prefix(){
-
-	
-
 }
 
 void rs232_xmit_msg_task()
@@ -358,24 +352,28 @@ void serial_readwrite_task()
 	int curr_char;
 	int done;
 
+	char * next_line = "\n\r\0";
+
 	fdout = mq_open("/tmp/mqueue/out", 0);
 	fdin = open("/dev/tty0/in", 0);
 
 	/* Prepare the response message to be queued. */
-	memcpy(str, "fwh@STM32:", 10);
+	//memcpy(str, "fwh@STM32:", strlen("fwh@STM32:"));
 	//char shell_header[10]= "fwh@STM32:";
 	
+	char id_at_path[10]="fwh@STM32:";
 
 
 	//write(fdout,shell_header,10);
 
 	while (1) {
-		curr_char = 10;
+		curr_char = 0;
 		done = 0;
+		write(fdout,&id_at_path,strlen(id_at_path));
 		do {
 			/* Receive a byte from the RS232 port (this call will
 			 * block). */
-			ch = echo_cmd_version();
+			ch = echo_cmd();
 			//read(fdin, &ch, 1);
 			//write(fdout,&ch,1);
 			/* If the byte is an end-of-line type character, then
@@ -396,7 +394,9 @@ void serial_readwrite_task()
 		/* Once we are done building the response string, queue the
 		 * response to be sent to the RS232 port.
 		 */
-		write(fdout, str, curr_char+1+1);
+
+		write(fdout,next_line,3);
+//		write(fdout, str, curr_char+1+1);
 	}
 }
 
@@ -409,7 +409,7 @@ void first()
 	if (!fork()) setpriority(0, 0), serialin(USART2, USART2_IRQn);
 	if (!fork()) rs232_xmit_msg_task();
 //	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), queue_str_task1();
-	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), queue_str_prefix();
+//	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), queue_str_prefix();
 	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), serial_readwrite_task();
 
 	setpriority(0, PRIORITY_LIMIT);
@@ -851,7 +851,7 @@ int main()
 					    (tasks[i].status == TASK_WAIT_TIME && tasks[i].stack->r0 == tick_count))
 						tasks[i].status = TASK_READY;
 			}
-		}
+		}//end of switch
 
 		/* Put waken tasks in ready list */
 		for (task = wait_list; task != NULL;) {
