@@ -17,4 +17,4 @@ int mknod(int fd, int mode, int dev);
 
 void sleep(unsigned int);
 
-void ps(); //for command "ps"
+void state_to_global(); //for command "ps"

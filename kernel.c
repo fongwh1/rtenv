@@ -564,7 +564,7 @@ void strcpy(char * dest , char * src, int len){
 
 void write_task_info(){
 
-	ps();
+	state_to_global();
 	int fdout = mq_open("/tmp/mqueue/out",0);
 	int task_counter = 0;
 
