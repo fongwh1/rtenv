@@ -269,7 +269,7 @@ void echo()
 char echo_cmd()
 {
 	int fdout, fdin;
-	char c;//[100] = {'\0'};
+	char c;
 	int c_count = 0;
 	fdout = open("/dev/tty0/out",0);
 	fdin = open("/dev/tty0/in", 0);
@@ -278,7 +278,6 @@ char echo_cmd()
 		read(fdin, &c, 1);
 		write(fdout, &c, 1);
 		break;
-		//c_count++;
 	}
 	
 	return c;
@@ -358,24 +357,18 @@ void serial_readwrite_task()
 	fdin = open("/dev/tty0/in", 0);
 
 	/* Prepare the response message to be queued. */
-	//memcpy(str, "fwh@STM32:", strlen("fwh@STM32:"));
-	//char shell_header[10]= "fwh@STM32:";
 	
-	char id_at_path[10]="fwh@STM32:";
+	char prompt[10]="fwh@STM32:";
 
-
-	//write(fdout,shell_header,10);
 
 	while (1) {
 		curr_char = 0;
 		done = 0;
-		write(fdout,&id_at_path,strlen(id_at_path));
+		write(fdout,&prompt,strlen(prompt));
 		do {
 			/* Receive a byte from the RS232 port (this call will
 			 * block). */
 			ch = echo_cmd();
-			//read(fdin, &ch, 1);
-			//write(fdout,&ch,1);
 			/* If the byte is an end-of-line type character, then
 			 * finish the string and inidcate we are done.
 			 */
@@ -396,7 +389,9 @@ void serial_readwrite_task()
 		 */
 
 		write(fdout,next_line,3);
-//		write(fdout, str, curr_char+1+1);
+		if ( str[0] == 'p' && str[1] == 's'){
+			write_task_info();
+		}
 	}
 }
 
@@ -408,8 +403,6 @@ void first()
 	if (!fork()) setpriority(0, 0), serialout(USART2, USART2_IRQn);
 	if (!fork()) setpriority(0, 0), serialin(USART2, USART2_IRQn);
 	if (!fork()) rs232_xmit_msg_task();
-//	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), queue_str_task1();
-//	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), queue_str_prefix();
 	if (!fork()) setpriority(0, PRIORITY_DEFAULT - 10), serial_readwrite_task();
 
 	setpriority(0, PRIORITY_LIMIT);
@@ -548,6 +541,77 @@ void _write(struct task_control_block *task, struct task_control_block *tasks, s
 					_read(&tasks[i], tasks, task_count, pipes);
 		}
 	}
+}
+
+char* itoa(int val)
+{   
+    static char buf[2] = { "0" };
+    int i = 1;
+    for (;i >= 0 ; i--, val /= 10)   
+        buf[i] = "0123456789"[val % 10];
+    return &buf; 
+}
+
+int task_info [TASK_LIMIT][3];
+int task_count_global;
+
+void strcpy(char * dest , char * src, int len){
+	while(len > 0 ){
+		dest[ len - 1] = src[len - 1];
+		len--;
+	}
+}
+
+void write_task_info(){
+
+	ps();
+	int fdout = mq_open("/tmp/mqueue/out",0);
+	int task_counter = 0;
+
+	char * tmp;
+
+	char * task_pid_ch;
+	char * task_status_ch;
+	char * task_priority_ch;
+
+	for(;task_counter < task_count_global;task_counter++){
+		
+		//tmp = itoa(task_info[0][0]);
+		//strcpy(task_pid_ch , tmp , 2);
+		task_pid_ch = itoa(task_info[task_counter][0]);
+		write(fdout,task_pid_ch,2);
+		write(fdout,"   \0",4);
+		
+		switch(task_info[task_counter][1]){
+		case TASK_READY:
+			write(fdout,"TASK_READY\0",11);
+			write(fdout,"       \0",8);
+			break;
+		case TASK_WAIT_READ:
+			write(fdout,"TASK_WAIT_READ\0",15);
+			write(fdout,"   \0",4);
+			break;
+		case TASK_WAIT_WRITE:
+			write(fdout,"TASK_WAIT_WRITE\0",16);
+			write(fdout," \0",2);
+			break;
+		case TASK_WAIT_INTR:
+			write(fdout,"TASK_WAIT_INTR\0",15);
+			write(fdout,"   \0",4);
+			break;
+		case TASK_WAIT_TIME:
+			write(fdout,"TASK_WAIT_TIME\0",15);
+			write(fdout,"  \0",3);
+			break;
+		default:
+			break;
+		}
+		
+		task_priority_ch = itoa(task_info[task_counter][2]);		
+		write(fdout,task_priority_ch,2);
+		write(fdout,"\n\r\0",3);
+	}
+
 }
 
 int
@@ -722,6 +786,10 @@ int main()
 	int timeup;
 	unsigned int tick_count = 0;
 
+	int fdout = ("/tmp/mqueue/out", 0 );
+	size_t counter = 0;
+	char * char_task_count;
+
 	SysTick_Config(configCPU_CLOCK_HZ / configTICK_RATE_HZ);
 
 	init_rs232();
@@ -830,6 +898,16 @@ int main()
 			if (tasks[current_task].stack->r0 != 0) {
 				tasks[current_task].stack->r0 += tick_count;
 				tasks[current_task].status = TASK_WAIT_TIME;
+			}
+			break;
+		case 0x10:
+
+			task_count_global = task_count ;
+
+			for(counter = 0;counter <= task_count ; counter++){
+				task_info[counter][0] = tasks[counter].pid;
+				task_info[counter][1] = tasks[counter].status;
+				task_info[counter][2] = tasks[counter].priority;
 			}
 			break;
 		default: /* Catch all interrupts */
