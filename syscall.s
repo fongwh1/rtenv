@@ -75,8 +75,8 @@ sleep:
 	nop
 	pop {r7}
 	bx lr
-.global state_to_global
-state_to_global:
+.global top
+top:
         push {r7}
         mov r7, #0x10
         svc 0

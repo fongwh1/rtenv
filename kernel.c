@@ -310,9 +310,10 @@ void rs232_xmit_msg_task()
 void queue_str_task_once(const char *str)
 {
 	int fdout = mq_open("/tmp/mqueue/out", 0);
-	int msg_len = strlen(str) + 1;
+	int msg_len = strlen(str)+1;
 
 	write(fdout, str ,msg_len);
+	write(fdout,"\0\n\r\0",4);
 }
 
 void queue_str_task(const char *str, int delay)
@@ -341,6 +342,13 @@ void queue_str_task2()
 void queue_str_prefix()
 {
 	queue_str_task_once("fwh@STM32:");
+}
+
+void hello()
+{
+	int fdout = mq_open("/tmp/mqueue/out",0);
+	write(fdout, "Hello World!" , 12 );
+	write(fdout, "\n\r\0" , 3);
 }
 
 void serial_readwrite_task()
@@ -391,6 +399,9 @@ void serial_readwrite_task()
 		write(fdout,next_line,3);
 		if ( str[0] == 'p' && str[1] == 's'){
 			write_task_info();
+		}
+		if ( str[0] == 'h' && str[1] == 'e' && str[2] == 'l' && str[3] == 'l' && str[4] == 'o'){
+			hello();
 		}
 	}
 }
@@ -564,7 +575,7 @@ void strcpy(char * dest , char * src, int len){
 
 void write_task_info(){
 
-	state_to_global();
+	top();
 	int fdout = mq_open("/tmp/mqueue/out",0);
 	int task_counter = 0;
 
