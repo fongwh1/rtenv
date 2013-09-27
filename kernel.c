@@ -349,13 +349,13 @@ void hello()
 //	queue_str_task_once("Hello World!");
 	char hello_world[12] = "hello world!\0";
 	int fdout = mq_open("/tmp/mqueue/out",0);
-	write(fdout , &hello_world , strlen(hello_world));
+	write(fdout , &hello_world , 13);
 	write(fdout, "\n\r\0" , 3 );
 }
 
 void echo_str(const char * str , int len){
 	int fdout = mq_open("/tmp/mqueue/out" , 0 );
-	write(fdout , str , len);
+	write(fdout , str , len );
 }
 
 void serial_readwrite_task()
@@ -389,7 +389,8 @@ void serial_readwrite_task()
 			 */
 			if (curr_char >= 98 || (ch == '\r') || (ch == '\n')) {
 				str[curr_char] = '\n';
-				str[curr_char+1] = '\0';
+				str[curr_char+1] = '\r';
+				str[curr_char+2] = '\0';
 				done = -1;
 				/* Otherwise, add the character to the
 				 * response string. */
@@ -410,9 +411,9 @@ void serial_readwrite_task()
 		else if( str[0] == 'h' && str[1] == 'e' && str[2] == 'l' && str[3] == 'l' && str[4] == 'o'){
 			hello();
 		}else if( str[0] == 'e' && str[1] == 'c' && str[2] == 'h' && str[3] == 'o'){
-//			str[curr_char + 1 ] = "\r";
-//			str[curr_char + 2 ] = "\0";
-			echo_str(&str[5] , curr_char - 4 );
+//			str[curr_char + 1 ] = '\r';
+			str[curr_char + 2 ] = '\0';
+			echo_str(&str[5] , curr_char - 2 );
 //			write(fdout,next_line,3);
 		}
 	}
