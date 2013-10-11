@@ -54,6 +54,7 @@ void puts(char *s)
 #define PIPE_BUF   64 /* Size of largest atomic pipe message */
 #define PATH_MAX   32 /* Longest absolute path */
 #define PIPE_LIMIT (TASK_LIMIT * 2)
+#define HEAP_SIZE 256
 
 #define PATHSERVER_FD (TASK_LIMIT + 3) 
 	/* File descriptor of pipe to pathserver */
@@ -480,19 +481,19 @@ struct pipe_ringbuffer {
 #define PIPE_LEN(pipe)     (RB_LEN((pipe), PIPE_BUF))
 
 
-static size_t * heap = &_HEAP; 
+static size_t * start_heap = &_HEAP; 
 static size_t * end_heap = &_EHEAP ; 
 
 
 
 void init_heaps(size_t * heaps_end ){
 
-	int heap_size_total = (int)end_heap - (int)heap;
+	int heap_size_total = (int)end_heap - (int)start_heap;
         int heap_size_each_task = heap_size_total / TASK_LIMIT;
 
 	int counter;
 	for(counter = 0;counter < TASK_LIMIT;counter++){
-		heaps_end[counter] = (int)heap + (counter + 1) * heap_size_each_task;
+		heaps_end[counter] = (int)start_heap + (counter + 1) * heap_size_each_task;
 	}
 
 }
@@ -820,7 +821,9 @@ _mknod(struct pipe_ringbuffer *pipe, int dev)
 
 int main()
 {
-	
+
+	size_t heaps[TASK_LIMIT][HEAP_SIZE];
+	int heaps_break[TASK_LIMIT];
 	unsigned int stacks[TASK_LIMIT][STACK_SIZE];
 	struct task_control_block tasks[TASK_LIMIT];
 	struct pipe_ringbuffer pipes[PIPE_LIMIT];
@@ -833,7 +836,7 @@ int main()
 	int timeup;
 	unsigned int tick_count = 0;
 
-	size_t * heap_end_limit[TASK_LIMIT];
+//	size_t * heap_end_limit[TASK_LIMIT];
 
 	int fdout = ("/tmp/mqueue/out", 0 );
 	size_t counter = 0;
@@ -849,6 +852,8 @@ int main()
 	tasks[task_count].priority = PRIORITY_DEFAULT;
 	task_count++;
 
+
+
 	/* Initialize all pipes */
 	for (i = 0; i < PIPE_LIMIT; i++)
 		pipes[i].start = pipes[i].end = 0;
@@ -858,7 +863,9 @@ int main()
 		_mknod(&pipes[i], S_IFIFO);
 
 	/* Initialize each end of heap of task*/
-	init_heaps(heap_end_limit);
+	
+	for (i = 0; i < TASK_LIMIT; i++)
+		heaps_break[i] = 0;
 
 	/* Initialize ready lists */
 	for (i = 0; i <= PRIORITY_LIMIT; i++)
@@ -953,7 +960,16 @@ int main()
 			}
 			break;
 		case 0x0a:/*sbrk*/
-			//_sbrk();
+			
+			if (heaps_break[current_task]+(int)tasks[current_task].stack->r0-1 < HEAP_SIZE)
+			{	
+				
+				heaps_break[current_task] += ((int)tasks[current_task].stack->r0)-1;
+				tasks[current_task].stack->r0 = &heaps[current_task][heaps_break[current_task]];
+			}else{
+				tasks[current_task].stack->r0 = -1;
+			}
+
 			break;
 		case 0x10:
 
