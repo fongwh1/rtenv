@@ -33,6 +33,8 @@ SECTIONS
 		_end = .;
 	} >RAM
 
+	_estack = ORIGIN(RAM) + LENGTH(RAM);
+
 	PROVIDE(_HEAP = _end);
 	PROVIDE( _EHEAP = ALIGN(ORIGIN(RAM) + LENGTH(RAM) -4,4));
 
