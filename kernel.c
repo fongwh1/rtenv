@@ -5,7 +5,6 @@
 
 #include <stddef.h>
 
-size_t * _sbrk(int increment);
 void *memcpy(void *dest, const void *src, size_t n);
 
 int strcmp(const char *a, const char *b) __attribute__ ((naked));
@@ -55,7 +54,6 @@ void puts(char *s)
 #define PIPE_BUF   64 /* Size of largest atomic pipe message */
 #define PATH_MAX   32 /* Longest absolute path */
 #define PIPE_LIMIT (TASK_LIMIT * 2)
-#define HEAP_SIZE 256;
 
 #define PATHSERVER_FD (TASK_LIMIT + 3) 
 	/* File descriptor of pipe to pathserver */
@@ -481,7 +479,6 @@ struct pipe_ringbuffer {
 #define PIPE_PEEK(pipe, v, i)  RB_PEEK((pipe), PIPE_BUF, (v), (i))
 #define PIPE_LEN(pipe)     (RB_LEN((pipe), PIPE_BUF))
 
-#define align4(x) ((((x)-1)>>2)<<2)+4 /*address alignment*/
 
 static size_t * heap = &_HEAP; 
 static size_t * end_heap = &_EHEAP ; 
