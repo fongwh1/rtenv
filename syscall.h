@@ -18,3 +18,5 @@ int mknod(int fd, int mode, int dev);
 void sleep(unsigned int);
 
 void top(); //for command "ps"
+
+void * sbrk(int incr);

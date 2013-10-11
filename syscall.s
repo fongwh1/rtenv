@@ -83,3 +83,12 @@ top:
         nop
         pop {r7}
         bx lr
+.global sbrk
+sbrk:
+        push {r7}
+        mov r7, #0x0a
+        svc 0
+        nop
+        pop {r7}
+        bx lr
+                 

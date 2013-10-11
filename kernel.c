@@ -5,6 +5,7 @@
 
 #include <stddef.h>
 
+size_t * _sbrk(int increment);
 void *memcpy(void *dest, const void *src, size_t n);
 
 int strcmp(const char *a, const char *b) __attribute__ ((naked));
@@ -54,6 +55,7 @@ void puts(char *s)
 #define PIPE_BUF   64 /* Size of largest atomic pipe message */
 #define PATH_MAX   32 /* Longest absolute path */
 #define PIPE_LIMIT (TASK_LIMIT * 2)
+#define HEAP_SIZE 256;
 
 #define PATHSERVER_FD (TASK_LIMIT + 3) 
 	/* File descriptor of pipe to pathserver */
@@ -71,6 +73,9 @@ void puts(char *s)
 #define S_IMSGQ 2
 
 #define O_CREAT 4
+
+extern unsigned int _HEAP;
+extern unsigned int _EHEAP;
 
 /* Stack struct of user thread, see "Exception entry and return" */
 struct user_thread_stack {
@@ -360,6 +365,7 @@ void echo_str(const char * str , int len){
 
 void serial_readwrite_task()
 {
+
 	int fdout, fdin;
 	char str[100];
 	char ch;
@@ -474,6 +480,25 @@ struct pipe_ringbuffer {
 #define PIPE_POP(pipe, v)  RB_POP((pipe), PIPE_BUF, (v))
 #define PIPE_PEEK(pipe, v, i)  RB_PEEK((pipe), PIPE_BUF, (v), (i))
 #define PIPE_LEN(pipe)     (RB_LEN((pipe), PIPE_BUF))
+
+#define align4(x) ((((x)-1)>>2)<<2)+4 /*address alignment*/
+
+static size_t * heap = &_HEAP; 
+static size_t * end_heap = &_EHEAP ; 
+
+
+
+void init_heaps(size_t * heaps_end ){
+
+	int heap_size_total = (int)end_heap - (int)heap;
+        int heap_size_each_task = heap_size_total / TASK_LIMIT;
+
+	int counter;
+	for(counter = 0;counter < TASK_LIMIT;counter++){
+		heaps_end[counter] = (int)heap + (counter + 1) * heap_size_each_task;
+	}
+
+}
 
 unsigned int *init_task(unsigned int *stack, void (*start)())
 {
@@ -798,6 +823,7 @@ _mknod(struct pipe_ringbuffer *pipe, int dev)
 
 int main()
 {
+	
 	unsigned int stacks[TASK_LIMIT][STACK_SIZE];
 	struct task_control_block tasks[TASK_LIMIT];
 	struct pipe_ringbuffer pipes[PIPE_LIMIT];
@@ -809,6 +835,8 @@ int main()
 	struct task_control_block *task;
 	int timeup;
 	unsigned int tick_count = 0;
+
+	size_t * heap_end_limit[TASK_LIMIT];
 
 	int fdout = ("/tmp/mqueue/out", 0 );
 	size_t counter = 0;
@@ -831,6 +859,9 @@ int main()
 	/* Initialize fifos */
 	for (i = 0; i <= PATHSERVER_FD; i++)
 		_mknod(&pipes[i], S_IFIFO);
+
+	/* Initialize each end of heap of task*/
+	init_heaps(heap_end_limit);
 
 	/* Initialize ready lists */
 	for (i = 0; i <= PRIORITY_LIMIT; i++)
@@ -923,6 +954,9 @@ int main()
 				tasks[current_task].stack->r0 += tick_count;
 				tasks[current_task].status = TASK_WAIT_TIME;
 			}
+			break;
+		case 0x0a:/*sbrk*/
+			//_sbrk();
 			break;
 		case 0x10:
 
