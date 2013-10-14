@@ -53,6 +53,14 @@ qemudbg: main.bin $(QEMU_STM32)
 	sleep 1
 	$(CROSS_COMPILE)gdb -x gdb.in 
 
+qemudbg_mem_info: main.bin $(QEMU_STM32)
+	$(QEMU_STM32) -M stm32-p103 \
+        	-gdb tcp::3333 -S \
+        	-kernel main.bin &
+	sleep 1
+	$(CROSS_COMPILE)gdb -x gscript_check_heap_stack
+
+
 qemu_remote: main.bin $(QEMU_STM32)
 	$(QEMU_STM32) -M stm32-p103 -kernel main.bin -vnc :1
 

@@ -483,13 +483,14 @@ struct pipe_ringbuffer {
 
 static size_t * start_heap = &_S_HEAP; 
 static size_t * end_heap = &_E_HEAP ; 
-
+static unsigned int heap_size_total = 0;
+static unsigned int heap_size_each_task = 0;
 
 
 void init_heaps(){
 
-	int heap_size_total = (int)end_heap - (int)start_heap;
-        int heap_size_each_task = heap_size_total / TASK_LIMIT;
+	heap_size_total = (int)end_heap - (int)start_heap;
+        heap_size_each_task = heap_size_total / TASK_LIMIT;
 }
 
 unsigned int *init_task(unsigned int *stack, void (*start)())

@@ -1,0 +1,15 @@
+file main.elf
+target remote :3333
+b kernel.c:494
+c
+echo "heap start address\n"
+print start_heap
+echo "heap_end address\n"
+print end_heap
+echo "total heap memory in \"KB\"\n"
+print ((end_heap - start_heap)/1024)
+echo "the available memory between heap and stack\n"
+print/x (int)($sp - (int)end_heap)
+b kernel.c:863
+c
+quit
