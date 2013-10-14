@@ -54,7 +54,7 @@ void puts(char *s)
 #define PIPE_BUF   64 /* Size of largest atomic pipe message */
 #define PATH_MAX   32 /* Longest absolute path */
 #define PIPE_LIMIT (TASK_LIMIT * 2)
-#define HEAP_SIZE 256
+#define HEAP_SIZE 128
 
 #define PATHSERVER_FD (TASK_LIMIT + 3) 
 	/* File descriptor of pipe to pathserver */
@@ -73,8 +73,8 @@ void puts(char *s)
 
 #define O_CREAT 4
 
-extern unsigned int _HEAP;
-extern unsigned int _EHEAP;
+extern unsigned int _S_HEAP;
+extern unsigned int _E_HEAP;
 
 /* Stack struct of user thread, see "Exception entry and return" */
 struct user_thread_stack {
@@ -481,20 +481,21 @@ struct pipe_ringbuffer {
 #define PIPE_LEN(pipe)     (RB_LEN((pipe), PIPE_BUF))
 
 
-static size_t * start_heap = &_HEAP; 
-static size_t * end_heap = &_EHEAP ; 
+static size_t * start_heap = &_S_HEAP; 
+static size_t * end_heap = &_E_HEAP ; 
 
 
 
-void init_heaps(size_t * heaps_end ){
+void init_heaps(/*size_t * heaps_end*/ ){
 
 	int heap_size_total = (int)end_heap - (int)start_heap;
         int heap_size_each_task = heap_size_total / TASK_LIMIT;
 
-	int counter;
+/*	int counter;
 	for(counter = 0;counter < TASK_LIMIT;counter++){
 		heaps_end[counter] = (int)start_heap + (counter + 1) * heap_size_each_task;
 	}
+*/
 
 }
 
@@ -822,8 +823,8 @@ _mknod(struct pipe_ringbuffer *pipe, int dev)
 int main()
 {
 
-	size_t heaps[TASK_LIMIT][HEAP_SIZE];
-	int heaps_break[TASK_LIMIT];
+//	size_t heaps[TASK_LIMIT][HEAP_SIZE];
+//	int heaps_break[TASK_LIMIT];
 	unsigned int stacks[TASK_LIMIT][STACK_SIZE];
 	struct task_control_block tasks[TASK_LIMIT];
 	struct pipe_ringbuffer pipes[PIPE_LIMIT];
@@ -864,8 +865,7 @@ int main()
 
 	/* Initialize each end of heap of task*/
 	
-	for (i = 0; i < TASK_LIMIT; i++)
-		heaps_break[i] = 0;
+	init_heaps();	
 
 	/* Initialize ready lists */
 	for (i = 0; i <= PRIORITY_LIMIT; i++)
@@ -961,7 +961,7 @@ int main()
 			break;
 		case 0x0a:/*sbrk*/
 			
-			if (heaps_break[current_task]+(int)tasks[current_task].stack->r0-1 < HEAP_SIZE)
+/*			if (heaps_break[current_task]+(int)tasks[current_task].stack->r0-1 < HEAP_SIZE)
 			{	
 				
 				heaps_break[current_task] += ((int)tasks[current_task].stack->r0)-1;
@@ -969,7 +969,7 @@ int main()
 			}else{
 				tasks[current_task].stack->r0 = -1;
 			}
-
+*/
 			break;
 		case 0x10:
 

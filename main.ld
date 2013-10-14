@@ -2,9 +2,10 @@ ENTRY(main)
 MEMORY
 {
   FLASH (rx) : ORIGIN = 0x00000000, LENGTH = 128K
-  RAM (rwx) : ORIGIN = 0x20000000, LENGTH = 20K
-
+  RAM (rwx) : ORIGIN = 0x20000000, LENGTH = 40K
 }
+
+heap_size = 8 * 1024;
 
 SECTIONS
 {
@@ -33,9 +34,17 @@ SECTIONS
 		_end = .;
 	} >RAM
 
-	_estack = ORIGIN(RAM) + LENGTH(RAM);
+	.heap :
+	{
+		_heap_start = .;
+		. = . + heap_size;
+		_heap_end = .;
+		. = ALIGN(4);
+	}
 
-	PROVIDE(_HEAP = _end);
-	PROVIDE( _EHEAP = ALIGN(ORIGIN(RAM) + LENGTH(RAM) -4,4));
+        PROVIDE( _S_HEAP = _heap_start);
+        PROVIDE( _E_HEAP = _heap_end);
+	
+        _estack = ORIGIN(RAM) + LENGTH(RAM);
 
  }  
