@@ -486,17 +486,10 @@ static size_t * end_heap = &_E_HEAP ;
 
 
 
-void init_heaps(/*size_t * heaps_end*/ ){
+void init_heaps(){
 
 	int heap_size_total = (int)end_heap - (int)start_heap;
         int heap_size_each_task = heap_size_total / TASK_LIMIT;
-
-/*	int counter;
-	for(counter = 0;counter < TASK_LIMIT;counter++){
-		heaps_end[counter] = (int)start_heap + (counter + 1) * heap_size_each_task;
-	}
-*/
-
 }
 
 unsigned int *init_task(unsigned int *stack, void (*start)())
@@ -624,8 +617,6 @@ void write_task_info(){
 
 	for(;task_counter < task_count_global;task_counter++){
 		
-		//tmp = itoa(task_info[0][0]);
-		//strcpy(task_pid_ch , tmp , 2);
 		task_pid_ch = itoa(task_info[task_counter][0]);
 		write(fdout,task_pid_ch,2);
 		write(fdout,"   \0",4);
@@ -822,9 +813,9 @@ _mknod(struct pipe_ringbuffer *pipe, int dev)
 
 int main()
 {
+	/*since the failure of array allocation with too much space*/
+	/*do not implement heaps array in .bss anymore*/
 
-//	size_t heaps[TASK_LIMIT][HEAP_SIZE];
-//	int heaps_break[TASK_LIMIT];
 	unsigned int stacks[TASK_LIMIT][STACK_SIZE];
 	struct task_control_block tasks[TASK_LIMIT];
 	struct pipe_ringbuffer pipes[PIPE_LIMIT];
@@ -836,8 +827,6 @@ int main()
 	struct task_control_block *task;
 	int timeup;
 	unsigned int tick_count = 0;
-
-//	size_t * heap_end_limit[TASK_LIMIT];
 
 	int fdout = ("/tmp/mqueue/out", 0 );
 	size_t counter = 0;
